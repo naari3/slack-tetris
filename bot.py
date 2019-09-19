@@ -168,6 +168,17 @@ def post_message(channel, command):
         as_user=True
     )
 
+def eval_command(command):
+    return {
+        "start": start,
+        "down": down,
+        "bottom": bottom,
+        "left": left,
+        "right": right,
+        "turn": turn,
+        "stop": stop
+    }.get(command)()
+
 
 @RTMClient.run_on(event='message')
 def handle_message(**event_data):
@@ -193,16 +204,16 @@ def handle_message(**event_data):
                 if tetris.playing:
                     post_message(channel, "playing")
                 else:
-                    eval(command)()
+                    eval_command(command)
                     post_message(channel, command)
             else:
                 if tetris.playing:
                     if repeat and repeat < WIDTH - 2:
                         for _ in range(repeat):
-                            eval(command)()
+                            eval_command(command)
                         post_message(channel, command)
                     else:
-                        if eval(command)():
+                        if eval_command(command):
                             post_message(channel, command)
                         else:
                             post_message(channel, "cannot_move")
@@ -210,7 +221,7 @@ def handle_message(**event_data):
                     post_message(channel, "not_playing")
         except Exception as e:
             logger.warn(e)
-            post_message(channel, texts.get("help"))
+            post_message(channel, "help")
 
 
 if __name__ == "__main__":
