@@ -168,6 +168,7 @@ def post_message(channel, command):
         as_user=True
     )
 
+
 def eval_command(command):
     return {
         "start": start,
@@ -180,48 +181,50 @@ def eval_command(command):
     }.get(command)()
 
 
+def parse_commands(commands):
+    parsed = []
+    rep = 1
+    for c in reversed(commands):
+        try:
+            rep = int(c)
+            continue
+        except:
+            if c in omits.keys():
+                c = omits.get(c)
+            parsed.extend([c] * rep)
+            rep = 1
+    return parsed[::-1]
+
+
 @RTMClient.run_on(event='message')
 def handle_message(**event_data):
     message = event_data.get("data")
     mentions = [BOT_NAME, "<@%s>" % BOT_ID]
     if message.get("text") and message["text"].split()[0] in mentions:
-        command = message["text"].split()[1]
-        if command in omits.keys():
-            command = omits.get(command)
-        if command in ["left", "right"] and len(message["text"].split()) > 2:
-            try:
-                repeat = int(message["text"].split()[2])
-            except:
-                repeat = None
-        else:
-            repeat = None
+        commands = parse_commands(message["text"].split()[1:])
         channel = message["channel"]
-        if not tetris.player:
-            tetris.player = message["ts"]
+        for command in commands:
+            if not tetris.player:
+                tetris.player = message["ts"]
 
-        try:
-            if command == "start":
-                if tetris.playing:
-                    post_message(channel, "playing")
-                else:
-                    eval_command(command)
-                    post_message(channel, command)
-            else:
-                if tetris.playing:
-                    if repeat and repeat < WIDTH - 2:
-                        for _ in range(repeat):
-                            eval_command(command)
-                        post_message(channel, command)
+            try:
+                if command == "start":
+                    if tetris.playing:
+                        post_message(channel, "playing")
                     else:
+                        eval_command(command)
+                        post_message(channel, command)
+                else:
+                    if tetris.playing:
                         if eval_command(command):
                             post_message(channel, command)
                         else:
                             post_message(channel, "cannot_move")
-                else:
-                    post_message(channel, "not_playing")
-        except Exception as e:
-            logger.warn(e)
-            post_message(channel, "help")
+                    else:
+                        post_message(channel, "not_playing")
+            except Exception as e:
+                logger.warn(e)
+                post_message(channel, "help")
 
 
 if __name__ == "__main__":
