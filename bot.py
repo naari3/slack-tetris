@@ -5,6 +5,7 @@ from slack import WebClient, RTMClient
 
 from slackeventsapi import SlackEventAdapter
 from tetris import Tetris, HEIGHT, WIDTH
+from tetris_thread import TetrisThread
 
 import nest_asyncio
 nest_asyncio.apply()
@@ -14,9 +15,6 @@ nest_asyncio.apply()
 token = os.getenv("SLACK_API_TOKEN")
 sc = WebClient(token=token)
 rtmclient = RTMClient(token=token)
-
-# get tetris
-tetris = Tetris()
 
 # load bot info
 BOT_NAME = os.getenv("BOT_NAME")
@@ -80,105 +78,9 @@ texts = {
     "over": "game over!",
 }
 
-# define block emojis
-emojis = {
-    -1: ":tenjiblock_dot:",
-    0: ":mu:",
-    1: ":tetris_z:",
-    2: ":tetris_l:",
-    3: ":tetris_s:",
-    4: ":tetris_j:",
-    5: ":tetris_o:",
-    6: ":tetris_i:",
-    7: ":tetris_t:",
-}
-
-
-def start():
-    tetris.playing = True
-    tetris.clear()
-
-
-def down():
-    success = tetris.down()
-    if not success:
-        tetris.player = None
-        tetris.playing = False
-    return success
-
-
-def harddrop():
-    success = tetris.harddrop()
-    if not success:
-        tetris.player = None
-        tetris.playing = False
-    return success
-
-
-def left():
-    return tetris.move(-1)
-
-
-def right():
-    return tetris.move(1)
-
-
-def turn():
-    return tetris.turn()
-
-
-def stop():
-    tetris.player = None
-    tetris.playing = False
-    return True
-
-
-def get_playground():
-    playground = ""
-    for y in range(HEIGHT - 1):
-        for x in range(WIDTH - 2):
-            # left lane
-            if x == 0:
-                playground += emojis[-1]
-
-            # background or block
-            b = tetris.block(x + 1, y)
-            if b >= 1:
-                playground += emojis[b]
-            else:
-                playground += emojis[0]
-
-            # right lane
-            if x == 9:
-                playground += emojis[-1]
-                playground += "\n"
-    return playground
-
-
-def post_message(channel, text):
-    # with_playground = ["start", "down", "harddrop", "left", "right", "turn"]
-    sc.chat_postMessage(
-        channel=channel,
-        text=text,
-        thread_ts=tetris.player,
-        as_user=True
-    )
-
 
 def make_message(command):
     return texts.get(command, "message not defined")
-
-
-def eval_command(command):
-    return {
-        "start": start,
-        "down": down,
-        "harddrop": harddrop,
-        "left": left,
-        "right": right,
-        "turn": turn,
-        "stop": stop
-    }.get(command)()
 
 
 def parse_commands(commands):
@@ -196,37 +98,47 @@ def parse_commands(commands):
     return parsed[::-1]
 
 
+# get tetris thread
+tetris_threads = {}
+
+
 @RTMClient.run_on(event='message')
 def handle_message(**event_data):
     message = event_data.get("data")
     mentions = [BOT_NAME, "<@%s>" % BOT_ID]
     if message.get("text") and message["text"].split()[0] in mentions:
+        ts = message.get("thread_ts") or message["ts"]
+
+        tetris_thread = tetris_threads.get(ts, None)
+        if tetris_thread == None:
+            tetris_thread = TetrisThread(sc, ts, message["channel"])
+            tetris_threads[ts] = tetris_thread
+
         commands = parse_commands(message["text"].split()[1:])
-        channel = message["channel"]
         message_text = ""
         for i, command in enumerate(commands):
-            if not tetris.player:
-                tetris.player = message["ts"]
+            if not tetris_thread.tetris.player:
+                tetris_thread.tetris.player = ts
 
             try:
                 if command == "start":
-                    if tetris.playing:
+                    if tetris_thread.tetris.playing:
                         message_text = make_message("playing")
                     else:
-                        eval_command(command)
+                        tetris_thread.eval_command(command)
                         message_text = make_message(command)
                         message_text += "\n"
-                        message_text += get_playground()
+                        message_text += tetris_thread.get_playground()
                 else:
-                    if tetris.playing:
-                        if eval_command(command):
+                    if tetris_thread.tetris.playing:
+                        if tetris_thread.eval_command(command):
                             message_text = make_message(command)
                             message_text += "\n"
-                            message_text += get_playground()
+                            message_text += tetris_thread.get_playground()
                         else:
                             message_text = make_message("cannot_move")
                             message_text += "\n"
-                            message_text += get_playground()
+                            message_text += tetris_thread.get_playground()
                     else:
                         message_text = make_message("not_playing")
             except Exception as e:
@@ -234,7 +146,7 @@ def handle_message(**event_data):
                 message_text = make_message("help")
 
             if i + 1 == len(commands) or command != commands[i + 1]:
-                post_message(channel, message_text)
+                tetris_thread.post_message(message_text)
 
 
 if __name__ == "__main__":
