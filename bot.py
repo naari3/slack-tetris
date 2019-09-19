@@ -49,7 +49,7 @@ sh.setFormatter(formatter)
 # define omits
 omits = {
     "d": "down",
-    "b": "bottom",
+    "h": "harddrop",
     "l": "left",
     "r": "right",
     "t": "turn",
@@ -59,7 +59,7 @@ omits = {
 texts = {
     "start": "game start!",
     "down": "down",
-    "bottom": "bottom",
+    "harddrop": "harddrop",
     "left": "left",
     "right": "right",
     "turn": "turn",
@@ -68,7 +68,7 @@ texts = {
         "usage\n"
         "```start: start new game\n"
         "down|d: move a block down\n"
-        "bottom|b: move a block to bototm\n"
+        "harddrop|h: move a block to harddrop\n"
         "left|l [n] (1~9, default 1): move a block to left [n] times\n"
         "right|r [n] (1~9, default 1): move a block to right [n] times\n"
         "turn|t: turn a block\n"
@@ -107,8 +107,8 @@ def down():
     return success
 
 
-def bottom():
-    success = tetris.bottom()
+def harddrop():
+    success = tetris.harddrop()
     if not success:
         tetris.player = None
         tetris.playing = False
@@ -156,7 +156,7 @@ def get_playground():
 
 
 def post_message(channel, text):
-    # with_playground = ["start", "down", "bottom", "left", "right", "turn"]
+    # with_playground = ["start", "down", "harddrop", "left", "right", "turn"]
     sc.chat_postMessage(
         channel=channel,
         text=text,
@@ -173,7 +173,7 @@ def eval_command(command):
     return {
         "start": start,
         "down": down,
-        "bottom": bottom,
+        "harddrop": harddrop,
         "left": left,
         "right": right,
         "turn": turn,

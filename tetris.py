@@ -85,7 +85,7 @@ class Tetris:
                 movable = False
         return movable
 
-    def bottom(self):
+    def harddrop(self):
         movable = True
         while self.fall():
             pass
