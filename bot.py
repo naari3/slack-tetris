@@ -6,6 +6,9 @@ from slack import WebClient, RTMClient
 from slackeventsapi import SlackEventAdapter
 from tetris import Tetris, HEIGHT, WIDTH
 
+import nest_asyncio
+nest_asyncio.apply()
+
 
 # get slack client
 token = os.getenv("SLACK_API_TOKEN")
@@ -158,8 +161,7 @@ def post_message(channel, command):
     if command in with_playground:
         text += "\n"
         text += get_playground()
-    sc.api_call(
-        "chat.postMessage",
+    sc.chat_postMessage(
         channel=channel,
         text=text,
         thread_ts=tetris.player,
@@ -169,9 +171,8 @@ def post_message(channel, command):
 
 @RTMClient.run_on(event='message')
 def handle_message(**event_data):
-    message = event_data
+    message = event_data.get("data")
     mentions = [BOT_NAME, "<@%s>" % BOT_ID]
-    print(mentions)
     if message.get("text") and message["text"].split()[0] in mentions:
         command = message["text"].split()[1]
         if command in omits.keys():
