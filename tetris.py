@@ -38,6 +38,10 @@ class Tetris:
         self.floating = self.blocks[self.id - 1]
         self.pos = WIDTH + WIDTH / 2 - 1
 
+        self.init_queue = [0, 1, 2, 3, 4, 5, 6]
+        self.queue = random.sample(self.init_queue, len(
+            self.init_queue)) + random.sample(self.init_queue, len(self.init_queue))
+
     def clear(self):
         for y in range(HEIGHT - 1):
             for x in range(1, WIDTH - 1):
@@ -109,7 +113,8 @@ class Tetris:
             self.fixed[int(self.pos + b)] = self.id
 
     def next(self):
-        nextId = random.randint(1, len(self.blocks))
+        # nextId = random.randint(1, len(self.blocks))
+        nextId = self.pop_queue()
         nextFloating = self.blocks[nextId - 1]
         nextPos = WIDTH + WIDTH / 2 - 1
         starting = True
@@ -123,6 +128,13 @@ class Tetris:
             self.floating = nextFloating
             self.pos = nextPos
         return starting
+
+    def pop_queue(self):
+        next_mino = self.queue.pop(0)
+        if len(self.queue) < 7:
+            self.queue.extend(random.sample(
+                self.init_queue, len(self.init_queue)))
+        return next_mino
 
     def full(self, line):
         for b in self.fixed[line * WIDTH: (line + 1) * WIDTH]:
