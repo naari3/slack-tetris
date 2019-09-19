@@ -1,14 +1,16 @@
 import logging
 import os
 import time
-from slackclient import SlackClient
+from slack import WebClient, RTMClient
+
 from slackeventsapi import SlackEventAdapter
 from tetris import Tetris, HEIGHT, WIDTH
 
 
-# get slack client and event apapter
-sc = SlackClient(os.getenv("SLACK_API_TOKEN"))
-sea = SlackEventAdapter(os.getenv("SLACK_VERIFICATION_TOKEN"), "/events")
+# get slack client
+token = os.getenv("SLACK_API_TOKEN")
+sc = WebClient(token=token)
+rtmclient = RTMClient(token=token)
 
 # get tetris
 tetris = Tetris()
@@ -165,10 +167,11 @@ def post_message(channel, command):
     )
 
 
-@sea.on("message")
-def handle_message(event_data):
-    message = event_data.get("event")
+@RTMClient.run_on(event='message')
+def handle_message(**event_data):
+    message = event_data
     mentions = [BOT_NAME, "<@%s>" % BOT_ID]
+    print(mentions)
     if message.get("text") and message["text"].split()[0] in mentions:
         command = message["text"].split()[1]
         if command in omits.keys():
@@ -194,7 +197,7 @@ def handle_message(event_data):
             else:
                 if tetris.playing:
                     if repeat and repeat < WIDTH - 2:
-                        for i in range(repeat):
+                        for _ in range(repeat):
                             eval(command)()
                         post_message(channel, command)
                     else:
@@ -210,5 +213,5 @@ def handle_message(event_data):
 
 
 if __name__ == "__main__":
-    # start flask server
-    sea.start(host='0.0.0.0', port=int(os.getenv("PORT")), debug=True)
+    # start rtm client
+    rtmclient.start()
