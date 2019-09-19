@@ -148,6 +148,10 @@ def handle_message(**event_data):
             if i + 1 == len(commands) or command != commands[i + 1]:
                 tetris_thread.post_message(message_text)
 
+            if tetris_thread.tetris.player == None and tetris_thread.tetris.playing == False:
+                tetris_thread.post_message(make_message("over"))
+                del tetris_threads[ts]
+
 
 if __name__ == "__main__":
     # start rtm client
