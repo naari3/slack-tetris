@@ -8,6 +8,8 @@ slackclient = "==1.1.0"
 slackeventsapi = "==1.1.0"
 
 [dev-packages]
+pylint = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.6"
