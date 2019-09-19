@@ -82,15 +82,15 @@ texts = {
 
 # define block emojis
 emojis = {
-    -1: ":tetris_gray:",
-    0: ":tetris_white:",
-    1: ":tetris_green:",
-    2: ":tetris_orange:",
-    3: ":tetris_pink:",
-    4: ":tetris_purple:",
-    5: ":tetris_yellow:",
-    6: ":tetris_blue:",
-    7: ":tetris_red:",
+    -1: ":tenjiblock_dot:",
+    0: ":mu:",
+    1: ":tetris_z:",
+    2: ":tetris_l:",
+    3: ":tetris_s:",
+    4: ":tetris_j:",
+    5: ":tetris_o:",
+    6: ":tetris_i:",
+    7: ":tetris_t:",
 }
 
 
