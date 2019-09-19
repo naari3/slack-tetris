@@ -155,18 +155,18 @@ def get_playground():
     return playground
 
 
-def post_message(channel, command):
-    text = texts.get(command, "message not defined")
-    with_playground = ["start", "down", "bottom", "left", "right", "turn"]
-    if command in with_playground:
-        text += "\n"
-        text += get_playground()
+def post_message(channel, text):
+    # with_playground = ["start", "down", "bottom", "left", "right", "turn"]
     sc.chat_postMessage(
         channel=channel,
         text=text,
         thread_ts=tetris.player,
         as_user=True
     )
+
+
+def make_message(command):
+    return texts.get(command, "message not defined")
 
 
 def eval_command(command):
@@ -203,28 +203,38 @@ def handle_message(**event_data):
     if message.get("text") and message["text"].split()[0] in mentions:
         commands = parse_commands(message["text"].split()[1:])
         channel = message["channel"]
-        for command in commands:
+        message_text = ""
+        for i, command in enumerate(commands):
             if not tetris.player:
                 tetris.player = message["ts"]
 
             try:
                 if command == "start":
                     if tetris.playing:
-                        post_message(channel, "playing")
+                        message_text = make_message("playing")
                     else:
                         eval_command(command)
-                        post_message(channel, command)
+                        message_text = make_message(command)
+                        message_text += "\n"
+                        message_text += get_playground()
                 else:
                     if tetris.playing:
                         if eval_command(command):
-                            post_message(channel, command)
+                            message_text = make_message(command)
+                            message_text += "\n"
+                            message_text += get_playground()
                         else:
-                            post_message(channel, "cannot_move")
+                            message_text = make_message("cannot_move")
+                            message_text += "\n"
+                            message_text += get_playground()
                     else:
-                        post_message(channel, "not_playing")
+                        message_text = make_message("not_playing")
             except Exception as e:
                 logger.warn(e)
-                post_message(channel, "help")
+                message_text = make_message("help")
+
+            if i + 1 == len(commands) or command != commands[i + 1]:
+                post_message(channel, message_text)
 
 
 if __name__ == "__main__":
